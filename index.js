@@ -1,23 +1,37 @@
 import jsonfile from "jsonfile";
 import moment from "moment";
 import simpleGit from "simple-git";
-import Random from "random";  // <- fix import
+import Random from "random";
 
+const git = simpleGit();   // use once
 const path = "./data.json";
-const makeCommits = (n) => {
-    if(n === 0) return simpleGit();
 
+const makeCommits = async (n) => {
+    if (n === 0) return;
+
+    // Random past date
     const x = Random.int(0, 54);
     const y = Random.int(0, 6);
-    const date = moment().subtract(1,"y").add(1,"d").add(x,"w").add(y,"d").format();
 
-    const data = { date };
-    console.log(date);
+    const date = moment()
+        .subtract(1, "y")
+        .add(1, "d")
+        .add(x, "w")
+        .add(y, "d")
+        .format();
 
-    jsonfile.writeFile(path, data, () => {
-        simpleGit().add([path])
-                   .commit(date, {'--date': date}, makeCommits.bind(this, --n));
-    });
+    // Write JSON
+    jsonfile.writeFileSync(path, { date });
+
+    // Stage and commit with backdate
+    await git.add([path]);
+    await git.commit(`Commit for ${date}`, path, { "--date": date });
+
+    console.log(`Committed: ${date}`);
+
+    // Next commit
+    await makeCommits(n - 1);
 };
 
-makeCommits(100);
+// Run 100 past commits
+makeCommits(100).then(() => console.log("All commits done"));
